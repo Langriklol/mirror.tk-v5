@@ -78,7 +78,7 @@ void Render::Initialise()
 	Interfaces::Surface->SetFontGlyphSet(Fonts::Menu, "Arial", 12, 400, 0, 0, FONTFLAG_ANTIALIAS);
 	Interfaces::Surface->SetFontGlyphSet(Fonts::Text, "DINPro-Regular", 30, 500, 0, 0, FONTFLAG_ANTIALIAS);
 	Interfaces::Surface->SetFontGlyphSet(Fonts::MenuBold, "Arial", 14, 420, 0, 0, FONTFLAG_ANTIALIAS);
-	Interfaces::Surface->SetFontGlyphSet(Fonts::ESP, "Courier New", 11, 400, 0, 0, FONTFLAG_NONE);
+	Interfaces::Surface->SetFontGlyphSet(Fonts::ESP, "Consolas", 12, 400, 0, 0, FONTFLAG_NONE);
 	Interfaces::Surface->SetFontGlyphSet(Fonts::MenuText, "Arial", 14, 370, 0, 0, FONTFLAG_ANTIALIAS);
 	Interfaces::Surface->SetFontGlyphSet(Fonts::MenuTabs, "MyScriptFont", 18, 600, 0, 0, FONTFLAG_ANTIALIAS | FONTFLAG_DROPSHADOW);
 	Interfaces::Surface->SetFontGlyphSet(Fonts::Slider, "Arial", 17, 600, 0, 0, FONTFLAG_ANTIALIAS | FONTFLAG_OUTLINE);
@@ -165,9 +165,9 @@ bool Render::TransformScreen(const Vector& in, Vector& out)
 {
 	static ptrdiff_t ptrViewMatrix;
 	if (!ptrViewMatrix)
-	{//                                                            findpattern z idy do wyszkuania
+	{//                                                          
 		ptrViewMatrix = static_cast<ptrdiff_t>(Utilities::Memory::FindPatternV2("client.dll", "0F 10 05 ? ? ? ? 8D 85 ? ? ? ? B9"));
-		ptrViewMatrix += 0x3; // do ptrMatrix dodajemy +0x3 byte aby uzyskac dokladna lokalizacje
+		ptrViewMatrix += 0x3;
 		ptrViewMatrix = *reinterpret_cast<uintptr_t*>(ptrViewMatrix);
 		ptrViewMatrix += 176;
 	}

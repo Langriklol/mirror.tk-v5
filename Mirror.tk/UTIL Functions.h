@@ -69,6 +69,7 @@ namespace GameUtils
 	bool IsVisible(IClientEntity* pLocal, IClientEntity* pEntity, int BoneID);
 	bool World2Screen(const Vector & point, Vector & out);
 	bool IsBallisticWeapon(void* weapon);
+	bool IsKnife(void * weapon);
 	bool IsPistol(void* weapon);
 	bool AutoSniper(void * weapon);
 	bool IsMachinegun(void * weapon);
@@ -108,8 +109,8 @@ Vector GetHitpointPosition(IClientEntity* pEntity, int Hitbox, Vector *Point);
 //bool GetBestPoint(IClientEntity* pEntity, Hitbox* hitbox, Vector *point);
 
 Vector GetHitboxPosition(IClientEntity* pEntity, int Hitbox);
-
-//Vector GetHitscan(IClientEntity* pEntity, int Hitbox);
+Vector  hitbox_location(IClientEntity* pEntity, int Hitbox);
+//Vector GetHitscan(IClientEntity* pEntity, int Hitbox); hitbox_location
 
 Vector GetEyePosition(IClientEntity* pEntity);
 

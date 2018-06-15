@@ -30,6 +30,13 @@ inline float DistPointToLine(Vector Point, Vector LineOrigin, Vector Dir)
 	return (Point - PerpendicularPoint).Length();
 }
 
+/*
+
+Most won't see it here anyways, but question from me to you.
+Should i declare?
+
+*/
+
 struct lbyRecords
 {
 	int tick_count;
@@ -46,7 +53,7 @@ class BackTrack
 {
 	int latest_tick;
 	bool IsTickValid(int tick);
-	bool Lowerbody(int tick);
+
 	void UpdateRecord(int i);
 
 
@@ -57,7 +64,7 @@ public:
 	void rageBackTrack(CUserCmd * cmd, IClientEntity * pLocal);
 	void Update(int tick_count);
 	void legitBackTrack(CUserCmd* cmd, IClientEntity* pLocal);
-	void AddLatencyToNetchan(INetChannelInfo * netchan);
+
 };
 
 extern backtrackData headPositions[64][12];

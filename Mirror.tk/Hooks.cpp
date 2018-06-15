@@ -18,6 +18,7 @@
 #include "lin_extp.h"
 
 static CPredictionSystem* Prediction = new CPredictionSystem();
+static CRageBot* rage = new CRageBot();
 CLagcompensation lagcompensation;
 HANDLE worldmodel_handle;
 C_BaseCombatWeapon* worldmodel;
@@ -396,8 +397,18 @@ bool __stdcall CreateMoveClient_Hooked(float frametime, CUserCmd* pCmd)
 			Hacks::MoveHacks(pCmd, bSendPacket);
 			ResolverSetup::GetInst().CM(pEntity);
 		}
-		backtracking->rageBackTrack(pCmd, pLocal);
+	
 		Prediction->EnginePrediction(pCmd);
+		{
+			Vector AimPoint;
+			backtracking->legitBackTrack(pCmd, pLocal);
+			backtracking->rageBackTrack(pCmd, pLocal);
+			backtracking->RunLBYBackTrack(pCmd, AimPoint);
+			rage->DoAimbot(pCmd, bSendPacket);
+			rage->DoNoRecoil(pCmd);
+		//	rage->Move(pCmd, bSendPacket); // will this shit even be stable? lol
+		}
+
 
 
 
@@ -643,8 +654,7 @@ bool __stdcall CreateMoveClient_Hooked(float frametime, CUserCmd* pCmd)
 		pCmd->sidemove = DotProduct(forward * vForwardNorm, aimright) + DotProduct(right * vRightNorm, aimright) + DotProduct(up * vUpNorm, aimright);
 		pCmd->upmove = DotProduct(forward * vForwardNorm, aimup) + DotProduct(right * vRightNorm, aimup) + DotProduct(up * vUpNorm, aimup);
 
-		Vector aim_point;
-		backtracking->RunLBYBackTrack(pCmd, aim_point);
+
 	
 	
 
@@ -781,8 +791,17 @@ void __fastcall PaintTraverse_Hooked(PVOID pPanels, int edx, unsigned int vguiPa
 			CUserCmd* pCmd = cmdlist;
 		
 			RECT scrn = Render::GetViewport();
+			if (bigboi::indicator != 6)
+			{
+				if (bigboi::indicator == 5)
+				{
+					if (Interfaces::Engine->IsConnected() && Interfaces::Engine->IsInGame())
+					{
+						Render::Text(centerW - 65, (centerh * 2) - 45, Color(0, 130, 250, 250), Render::Fonts::LBY, "BackUp AA");
+					}
+				}
+			}
 			
-
 			if (Options::Menu.VisualsTab.LBYIndicator.GetState())
 			{
 

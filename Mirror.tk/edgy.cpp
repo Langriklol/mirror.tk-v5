@@ -8,7 +8,7 @@
 
 void BackTrack::Update(int tick_count)
 {
-	if (!Options::Menu.RageBotTab.AimbotEnable.GetState())
+	if (!Options::Menu.RageBotTab.lag_pred.GetState())
 		return;
 	if (Interfaces::Engine->IsConnected() || !Interfaces::Engine->IsInGame())
 	{
@@ -32,6 +32,9 @@ bool BackTrack::IsTickValid(int tick)
 void BackTrack::UpdateRecord(int i)
 {
 	IClientEntity* pEntity = Interfaces::EntList->GetClientEntity(i);
+
+	if (!Options::Menu.RageBotTab.lag_pred.GetState())
+		return;
 	if (pEntity && pEntity->IsAlive() && !pEntity->IsDormant())
 	{
 		float lby = pEntity->GetLowerBodyYaw();
@@ -52,16 +55,24 @@ void BackTrack::UpdateRecord(int i)
 
 bool BackTrack::RunLBYBackTrack(CUserCmd* cmd, Vector& aimPoint)
 {
-	for (int i = 0; i < Interfaces::Engine->GetMaxClients(); i++)
+	if (Options::Menu.RageBotTab.lag_pred.GetState())
 	{
-		if (IsTickValid(records[i].tick_count))
+		for (int i = 0; i < Interfaces::Engine->GetMaxClients(); i++)
 		{
-			aimPoint = records[i].headPosition;
-			cmd->tick_count = records[i].tick_count;
-			return true;
+
+			if (IsTickValid(records[i].tick_count))
+			{
+				aimPoint = records[i].headPosition;
+				cmd->tick_count = records[i].tick_count;
+				return true;
+			}
+
 		}
+		return false;
 	}
-	return false;
+	else
+		return false;
+	
 }
 
 
@@ -144,8 +155,8 @@ void BackTrack::legitBackTrack(CUserCmd* cmd, IClientEntity* pLocal)
 
 void BackTrack::rageBackTrack(CUserCmd* cmd, IClientEntity* pLocal)
 {
-	if (Options::Menu.RageBotTab.AimbotEnable.GetState())
-	{
+	if (!Options::Menu.RageBotTab.lag_pred.GetState())
+		return;
 
 		int bestTargetIndex = -1;
 		int tickxd = 12;
@@ -214,7 +225,7 @@ void BackTrack::rageBackTrack(CUserCmd* cmd, IClientEntity* pLocal)
 			}
 		}
 
-	}
+	
 
 }
 BackTrack* backtracking = new BackTrack();

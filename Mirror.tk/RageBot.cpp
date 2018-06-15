@@ -11,10 +11,12 @@ static bool back = false;
 static bool up = false;
 static bool jitter = false;
 
+static bool backup = false;
+static bool default_aa = true;
 
 
 
-CRageBot ragebot;
+
 
 #define TICK_INTERVAL			(Interfaces::Globals->interval_per_tick)
 #define TIME_TO_TICKS( dt )		( (int)( 0.5f + (float)(dt) / TICK_INTERVAL ) )
@@ -115,7 +117,7 @@ void CRageBot::Fakelag(CUserCmd *pCmd, bool &bSendPacket)
 
 
 
-	if (!bSendPacket &&Options::Menu.MiscTab.BreakLBYDelta.GetValue() != 0) {
+	if (!bSendPacket && Options::Menu.MiscTab.antilby.GetState() != 0) {
 		if (next_lby_update_func(pCmd, pCmd->viewangles.y + Options::Menu.MiscTab.BreakLBYDelta.GetValue())) {
 			pCmd->viewangles.y += Options::Menu.MiscTab.BreakLBYDelta.GetValue();
 		}
@@ -274,13 +276,20 @@ void CRageBot::Move(CUserCmd *pCmd, bool &bSendPacket)
 
 
 
-	if (Options::Menu.RageBotTab.AimbotEnable.GetState() && Options::Menu.RageBotTab.lag_pred.GetIndex() == 0)
+	if (Options::Menu.RageBotTab.AimbotEnable.GetState() && !Options::Menu.RageBotTab.lag_pred.GetState())
 	{
-
+		pCmd->tick_count = TIME_TO_TICKS(GetLerpTime());
 		DoAimbot(pCmd, bSendPacket);
 	    DoNoRecoil(pCmd); 
-		pCmd->tick_count = TIME_TO_TICKS(current_aim_simulationtime) + TIME_TO_TICKS(GetLerpTime());
+	
     }
+	else if (Options::Menu.RageBotTab.AimbotEnable.GetState() && Options::Menu.RageBotTab.lag_pred.GetState())
+	{
+		pCmd->tick_count = TIME_TO_TICKS(current_aim_simulationtime) + TIME_TO_TICKS(GetLerpTime());
+		DoAimbot(pCmd, bSendPacket);
+		DoNoRecoil(pCmd);
+
+	}
 
 
 
@@ -314,7 +323,6 @@ Vector BestPoint(IClientEntity *targetPlayer, Vector &final)
 	final = tr.endpos;
 	return final;
 }
-
 
 void CRageBot::DoAimbot(CUserCmd *pCmd, bool &bSendPacket)
 {
@@ -418,6 +426,10 @@ void CRageBot::DoAimbot(CUserCmd *pCmd, bool &bSendPacket)
 	*/
 
 	IClientEntity* pLocal = (IClientEntity*)Interfaces::EntList->GetClientEntity(Interfaces::Engine->GetLocalPlayer());
+
+	
+
+	
 	bool FindNewTarget = true;
 	//IsLocked = false;
 
@@ -492,15 +504,15 @@ void CRageBot::DoAimbot(CUserCmd *pCmd, bool &bSendPacket)
 
 	
 	
-		Vector AimPoint = GetHitboxPosition(pTarget, HitBox);
+		Vector AimPoint = hitbox_location(pTarget, HitBox);
 	
 
 		if (GameUtils::IsScopedWeapon(pWeapon) && !pWeapon->IsScoped() && Options::Menu.RageBotTab.AccuracyAutoScope.GetState()) pCmd->buttons |= IN_ATTACK2;
-		else if ((Options::Menu.RageBotTab.AccuracyHitchance.GetValue() * 1.5 <= hitchance(pLocal, pWeapon)) || Options::Menu.RageBotTab.AccuracyHitchance.GetValue() == 0 || *pWeapon->m_AttributeManager()->m_Item()->ItemDefinitionIndex() == 64)
+		else if ((hitchance(pLocal, pWeapon)) >= Options::Menu.RageBotTab.AccuracyHitchance.GetValue() * 1.5 || Options::Menu.RageBotTab.AccuracyHitchance.GetValue() == 0 || *pWeapon->m_AttributeManager()->m_Item()->ItemDefinitionIndex() == 64)
 		{
 			if (AimAtPoint(pLocal, AimPoint, pCmd, bSendPacket))
 			{
-				if ((pTarget->GetFlags() & FL_ONGROUND) && pTarget->GetChokedTicks() >= 2)
+				if ((pTarget->GetFlags() & FL_ONGROUND) && pTarget->GetChokedTicks() > 4)
 				{
 					if (Options::Menu.RageBotTab.AimbotAutoFire.GetState() && !(pCmd->buttons & IN_ATTACK))
 					{
@@ -527,8 +539,6 @@ void CRageBot::DoAimbot(CUserCmd *pCmd, bool &bSendPacket)
 					if (Options::Menu.RageBotTab.AimbotAutoFire.GetState() && !(pCmd->buttons & IN_ATTACK))
 					{
 						pCmd->buttons |= IN_ATTACK;
-
-
 					}
 					else if (pCmd->buttons & IN_ATTACK || pCmd->buttons & IN_ATTACK2)return;
 				}
@@ -542,7 +552,7 @@ void CRageBot::DoAimbot(CUserCmd *pCmd, bool &bSendPacket)
 		{
 			if (GameUtils::IsPistol(pWeapon) && *pWeapon->m_AttributeManager()->m_Item()->ItemDefinitionIndex() != 64)
 			{
-				if (pCmd->buttons & IN_ATTACK && GameUtils::IsBallisticWeapon(pWeapon) && !GameUtils::IsGrenade(pWeapon))
+				if (pCmd->buttons & IN_ATTACK && !GameUtils::IsGrenade(pWeapon) && !GameUtils::IsKnife(pWeapon))
 				{
 					if (WasFiring)
 					{
@@ -837,9 +847,9 @@ int CRageBot::HitScan(IClientEntity* pEntity)
 
 #pragma region GetHitboxesToScan
 	int HitScanMode = Options::Menu.RageBotTab.TargetHitscan.GetIndex();
-	int huso = (pEntity->GetHealth());
-	int health = Options::Menu.RageBotTab.BaimIfUnderXHealth.GetValue();
-	bool AWall = Options::Menu.RageBotTab.AccuracyAutoWall.GetState();
+	float huso = (pEntity->GetHealth());
+	float health = Options::Menu.RageBotTab.BaimIfUnderXHealth.GetValue();
+	
 	bool Multipoint = Options::Menu.RageBotTab.TargetMultipoint.GetState();
 	int TargetHitbox = Options::Menu.RageBotTab.TargetHitbox.GetIndex();
 	static bool enemyHP = false;
@@ -1092,7 +1102,7 @@ int CRageBot::HitScan(IClientEntity* pEntity)
 							}
 							else
 							{
-								HitBoxesToScan.push_back((int)CSGOHitboxID::HITBOX_HEAD);
+								
 								HitBoxesToScan.push_back((int)CSGOHitboxID::HITBOX_NECK);
 								HitBoxesToScan.push_back((int)CSGOHitboxID::HITBOX_PELVIS);
 								HitBoxesToScan.push_back((int)CSGOHitboxID::HITBOX_UPPER_CHEST);
@@ -1115,28 +1125,44 @@ int CRageBot::HitScan(IClientEntity* pEntity)
 		}
 	}
 #pragma endregion Get the list of shit to scan
+
+	float highestDamage;
 	for (auto HitBoxID : HitBoxesToScan)
 	{
-		if (AWall) 
+		if (Options::Menu.RageBotTab.AccuracyAutoWall.GetState())
 		{
-			Vector Point = GetHitboxPosition(pEntity, HitBoxID);
+			Vector Point = hitbox_location(pEntity, HitBoxID);
 			float dmg = 0.f;
-
-
-
 			if (CanHit(Point, &dmg)) 
 			{
 				
-				if (dmg >= Options::Menu.RageBotTab.AccuracyMinimumDamage.GetValue()) {
+				if (dmg >= Options::Menu.RageBotTab.AccuracyMinimumDamage.GetValue() || dmg > pEntity->GetHealth())
+				{
 					return HitBoxID;
+					highestDamage = dmg;
 				}
 				
 			
 			}
 		}
-		else {
+		else 
+		{
 			if (GameUtils::IsVisible(hackManager.pLocal(), pEntity, HitBoxID))
-				return HitBoxID;
+			{
+				Vector Point = hitbox_location(pEntity, HitBoxID);
+				float dmg = 0.f;
+				if (CanHit(Point, &dmg))
+				{
+
+					if (dmg >= Options::Menu.RageBotTab.AccuracyMinimumDamage.GetValue() || dmg > pEntity->GetHealth())
+					{
+						return HitBoxID;
+						highestDamage = dmg;
+					}
+
+
+				}
+			}
 		}
 	}
 
@@ -1157,7 +1183,7 @@ void CRageBot::DoNoRecoil(CUserCmd *pCmd)
 		{
 			if (Options::Menu.MiscTab.OtherSafeMode.GetIndex() == 0 )
 			{
-				pCmd->viewangles -= AimPunch *2.05;
+				pCmd->viewangles -= AimPunch *2.01;
 				GameUtils::NormaliseViewAngle(pCmd->viewangles);
 			}
 			else if (Options::Menu.MiscTab.OtherSafeMode.GetIndex() == 1)
@@ -2454,6 +2480,328 @@ void CRageBot::DoPitch(CUserCmd * pCmd)
 
 }
 
+void backup_aa(CUserCmd* pCmd, bool& bSendPacket, IClientEntity* pLocal)
+{
+
+	IClientEntity* localp = Interfaces::EntList->GetClientEntity(Interfaces::Engine->GetLocalPlayer());
+
+	if (GetAsyncKeyState(Options::Menu.MiscTab.manualleft.GetKey())) // right
+	{
+		dir = true;
+		back = false;
+		up = false;
+		bigboi::indicator = 1;
+	}
+	else if (GetAsyncKeyState(Options::Menu.MiscTab.manualright.GetKey())) // left
+	{
+		dir = false;
+		back = false;
+		up = false;
+		bigboi::indicator = 2;
+	}
+	else if (GetAsyncKeyState(Options::Menu.MiscTab.manualback.GetKey()))
+	{
+		dir = false;
+		back = true;
+		up = false;
+		bigboi::indicator = 3;
+	}
+	else if (GetAsyncKeyState(Options::Menu.MiscTab.manualfront.GetKey()))
+	{
+		dir = false;
+		back = false;
+		up = true;
+		bigboi::indicator = 4;
+	}
+
+	static int Ticks;
+	static int Side;
+
+	if (Options::Menu.MiscTab.backup_aa.GetIndex() == 1)
+	{
+		if (localp->GetFlags() & FL_ONGROUND)
+		{
+			if (localp->GetVelocity().Length2D() > 3.5)
+			{
+				if (bSendPacket)
+				{
+					if (jitter)
+						pCmd->viewangles.y = 90;
+					else
+						pCmd->viewangles.y = -90;
+
+					jitter = !jitter;
+
+				}
+				else
+				{
+					if (jitter)
+						pCmd->viewangles.y -= 150 - rand() % 15;
+					else
+						pCmd->viewangles.y += 150 + rand() % 15;
+
+					jitter = !jitter;
+				}
+
+			}
+			else
+			{
+				if (bSendPacket)
+				{
+					pCmd->viewangles.y -= Ticks;
+					Ticks += 6;
+
+					if (Ticks > 90)
+						Ticks = -90;
+				}
+				else
+				{
+					pCmd->viewangles.y -= 180;
+				}
+			}
+		}
+		else
+		{
+			if (bSendPacket)
+			{
+				pCmd->viewangles.y = rand() % 360;
+			}
+			else
+			{
+				if (jitter)
+					pCmd->viewangles.y -= (165.f + rand() % 10);
+				else
+					pCmd->viewangles.y += (165.f - rand() % 10);
+
+				jitter = !jitter;
+			}
+		}
+	}
+	if (Options::Menu.MiscTab.backup_aa.GetIndex() == 2)
+	{
+
+		if (localp->GetFlags() & FL_ONGROUND)
+		{
+			if (localp->GetVelocity().Length2D() > 3.5)
+			{
+				if (bSendPacket)
+				{
+					pCmd->viewangles.y = hackManager.pLocal()->GetLowerBodyYaw() - (30 + rand() & 150);
+				}
+				else
+				{
+					if (dir && !back && !up)
+					{
+						if (jitter)
+							pCmd->viewangles.y -= ((85) - rand() % 10);
+						else
+							pCmd->viewangles.y -= ((95) + rand() % 10);
+
+						jitter = !jitter;
+					}
+					else if (!dir && !back && !up)
+					{
+						if (jitter)
+							pCmd->viewangles.y += ((85 ) - rand() % 10);
+						else
+							pCmd->viewangles.y += ((95 ) - rand() % 10);
+
+						jitter = !jitter;
+					}
+					else if (!dir && back && !up)
+					{
+						if (jitter)
+							pCmd->viewangles.y -= ((175) - rand() % 10);
+						else
+							pCmd->viewangles.y += ((175) - rand() % 10);
+
+						jitter = !jitter;
+					}
+					else if (!dir && !back && up)
+					{
+						if (jitter)
+							pCmd->viewangles.y += (5);
+						else
+							pCmd->viewangles.y -= (5);
+
+						jitter = !jitter;
+					}
+				}
+
+			}
+			else
+			{
+				if (bSendPacket)
+				{
+					if (dir && !back && !up)
+					{
+						if (jitter)
+							pCmd->viewangles.y += (125 - rand() % 15);
+						else
+							pCmd->viewangles.y += (55 + rand() % 15);
+
+						jitter = !jitter;
+					}
+					else if (!dir && !back && !up)
+					{
+						if (jitter)
+							pCmd->viewangles.y -= (125 - rand() % 15);
+						else
+							pCmd->viewangles.y -= (55 + rand() % 15);
+
+						jitter = !jitter;
+					}
+					else if (!dir && back && !up)
+					{
+						if (jitter)
+							pCmd->viewangles.y -= (15 - rand() % 15);
+						else
+							pCmd->viewangles.y += (15 - rand() % 15);
+
+						jitter = !jitter;
+					}
+					else if (!dir && !back && up)
+					{
+						if (jitter)
+							pCmd->viewangles.y += (145 + rand() % 15);
+						else
+							pCmd->viewangles.y -= (145 + rand() % 15);
+
+						jitter = !jitter;
+					}
+				
+				}
+				else
+				{
+					if (dir && !back && !up)
+						pCmd->viewangles.y -= 90.f;
+					else if (!dir && !back && !up)
+						pCmd->viewangles.y += 90.f;
+					else if (!dir && back && !up)
+						pCmd->viewangles.y -= 180.f;
+					else if (!dir && !back && up)
+						pCmd->viewangles.y -= 0.f;
+				}
+			}
+		}
+		else
+		{
+			if (bSendPacket)
+			{
+				pCmd->viewangles.y -= hackManager.pLocal()->GetLowerBodyYaw() + 90 + rand() % 35;
+			}
+			else
+			{
+				if (dir && !back && !up)
+				{
+					if (jitter)
+						pCmd->viewangles.y -= ((80) - rand() % 10);
+					else
+						pCmd->viewangles.y -= ((100) + rand() % 10);
+
+					jitter = !jitter;
+				}
+				else if (!dir && !back && !up)
+				{
+					if (jitter)
+						pCmd->viewangles.y += ((80) - rand() % 10);
+					else
+						pCmd->viewangles.y += ((100) - rand() % 10);
+
+					jitter = !jitter;
+				}
+				else if (!dir && back && !up)
+				{
+					if (jitter)
+						pCmd->viewangles.y -= ((165) - rand() % 10);
+					else
+						pCmd->viewangles.y += ((165) - rand() % 10);
+
+					jitter = !jitter;
+				}
+				else if (!dir && !back && up)
+				{
+					if (jitter)
+						pCmd->viewangles.y += (15);
+					else
+						pCmd->viewangles.y -= (15);
+
+					jitter = !jitter;
+				}
+			}
+		}
+	}
+	if (Options::Menu.MiscTab.backup_aa.GetIndex() == 3)
+	{
+		if (localp->GetFlags() & FL_ONGROUND)
+		{
+			if (localp->GetVelocity().Length2D() > 3.5)
+			{
+				if (bSendPacket)
+				{
+					pCmd->viewangles.y = rand() % 360;
+				}
+				else
+				{
+					pCmd->viewangles.y -= 180;
+				}
+
+			}
+			else
+			{
+				if (bSendPacket)
+				{
+					if (pCmd->viewangles.y + Options::Menu.MiscTab.BreakLBYDelta.GetValue())
+					{
+
+						pCmd->viewangles.y = (hackManager.pLocal()->GetLowerBodyYaw() - 90) + 180;
+					}
+					else
+					{
+						pCmd->viewangles.y = (hackManager.pLocal()->GetLowerBodyYaw() + 90) - 180;
+					}
+				}
+				else
+				{
+					if (pCmd->viewangles.y + Options::Menu.MiscTab.BreakLBYDelta.GetValue())
+					{
+
+						pCmd->viewangles.y = hackManager.pLocal()->GetLowerBodyYaw() + 180;
+					}
+					else
+					{
+						pCmd->viewangles.y = hackManager.pLocal()->GetLowerBodyYaw() + 180;
+					}
+				}
+			}
+		}
+		else
+		{
+			if (bSendPacket)
+			{
+				if (jitter)
+					pCmd->viewangles.y = hackManager.pLocal()->GetLowerBodyYaw() - 100 - rand() % 60;
+				else
+					pCmd->viewangles.y = hackManager.pLocal()->GetLowerBodyYaw() + 100 + rand() % 60;
+
+				jitter = !jitter;
+			}
+			else
+			{
+				if (pCmd->viewangles.y + Options::Menu.MiscTab.BreakLBYDelta.GetValue())
+				{
+					pCmd->viewangles.y = hackManager.pLocal()->GetLowerBodyYaw() - 45;
+				}
+				else
+				{
+					pCmd->viewangles.y = hackManager.pLocal()->GetLowerBodyYaw() - 60;
+				}
+			}
+		}
+	}
+	
+}
+
 
 void CRageBot::DoAntiAim(CUserCmd *pCmd, bool &bSendPacket)
 {
@@ -2473,19 +2821,12 @@ void CRageBot::DoAntiAim(CUserCmd *pCmd, bool &bSendPacket)
 		return;
 
 
-
 	if (IsAimStepping || pCmd->buttons & IN_ATTACK)
 		return;
 
 
 	if (warmup)
 		return;
-
-
-
-	
-		
-
 
 	if (pWeapon)
 	{
@@ -2497,38 +2838,40 @@ void CRageBot::DoAntiAim(CUserCmd *pCmd, bool &bSendPacket)
 		}
 	}
 
-	
-	
-	
+	if (GetAsyncKeyState(Options::Menu.MiscTab.backup_key.GetKey()))
+	{
+		backup = true;
+		default_aa = false;
+		bigboi::indicator = 5;
+	}
+	else if (GetAsyncKeyState(Options::Menu.MiscTab.default_key.GetKey()))
+	{
+		backup = false;
+		default_aa = true;
+		bigboi::indicator = 6;
+	}
 
-	
-
-
-
-
-
-
-	
 	if (Options::Menu.MiscTab.AntiAimEnable.GetState())
 	{
+		if (!backup && default_aa)
+		{
+			DoPitch(pCmd);
+			if (bSendPacket)
+				DoFakeAA(pCmd, bSendPacket, pLocal);
+			else
+				DoRealAA(pCmd, pLocal, bSendPacket);
+		}
+		else if (backup && !default_aa)
+		{
+			DoPitch(pCmd);
+			backup_aa(pCmd, bSendPacket, pLocal);
 
-		DoPitch(pCmd);
-
-		if (bSendPacket)
-			DoFakeAA(pCmd, bSendPacket, pLocal);
-		else
-			DoRealAA(pCmd, pLocal, bSendPacket);
+		}
 		
 		
 
 
 	}
-	
-
-
-		
-		
-		
 	
 
 }

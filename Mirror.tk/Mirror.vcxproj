@@ -207,7 +207,6 @@
     <ClCompile Include="INJ\ReflectiveLoader.cpp" />
     <ClCompile Include="Interfaces.cpp" />
     <ClCompile Include="LegitBot.cpp" />
-    <ClCompile Include="lin_extp.cpp" />
     <ClCompile Include="MathFunctions.cpp" />
     <ClCompile Include="Menu.cpp" />
     <ClCompile Include="MetaInfo.cpp" />

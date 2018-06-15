@@ -69,6 +69,8 @@ void CPredictionSystem::EnginePrediction(CUserCmd* pCmd)
 			*m_pPredictionRandomSeed = -1;
 			*m_pSetPredictionPlayer = 0;
 			Interfaces::MoveHelper->SetHost(0);
+
+
 		}
 	}
 

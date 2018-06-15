@@ -150,6 +150,9 @@ void CRageBotTab::Setup()
 	AccuracyAutoScope.SetFileId("acc_scope");
 	AimbotGroup.PlaceLabledControl(1, "Auto Scope", this, &AccuracyAutoScope);
 
+	lag_pred.SetFileId("lag_pred");
+	AimbotGroup.PlaceLabledControl(1, "Position Adjustment", this, &lag_pred);
+
 	TargetSelection.SetFileId("tgt_selection");
 	TargetSelection.AddItem("Closest To Crosshair");
 	TargetSelection.AddItem("Distance");
@@ -494,8 +497,8 @@ void CVisualTab::Setup()
 	OptionsHealth.AddItem("Default");
 	OptionsHealth.AddItem("Battery");
 	OptionsHealth.AddItem("Text");
-	OptionsHealth.AddItem("Both - Default");
-	OptionsHealth.AddItem("Both - Battery");
+//	OptionsHealth.AddItem("Both - Default");
+//	OptionsHealth.AddItem("Both - Battery");
 	OptionsGroup.PlaceLabledControl(1, "Health", this, &OptionsHealth);
 
 	OptionsInfo.SetFileId("opt_info");
@@ -538,8 +541,6 @@ void CVisualTab::Setup()
 	sound.AddItem("Bame");
 	OptionsGroup.PlaceLabledControl(1, "Hit Sound", this, &sound);
 
-//	SpecList.SetFileId("all_eyes_on_you__now_good_luck_clutching_ehehe"); // rip fps for some reason
-//	OptionsGroup.PlaceLabledControl(1, "Spectator List", this, &SpecList);
 
 
 	FiltersAll.SetFileId("ftr_all");
@@ -769,12 +770,13 @@ void CMiscTab::Setup()
 	FakePingValue.SetFileId("otr_fakepingspike");
 	OtherGroup.PlaceLabledControl(0, "Ping Spike", this, &FakePingValue);
 
+	/*
 	namechange.SetFileId("otr_namechange");
 	namechange.AddItem("Off");
 	namechange.AddItem("Steal");
 	namechange.AddItem("Spam");
 	namechange.AddItem("Hide");
-	OtherGroup.PlaceLabledControl(0, "Name Changer", this, &namechange);
+	OtherGroup.PlaceLabledControl(0, "Name Changer", this, &namechange);*/
 
 	ConfigBox.SetFileId("cfg_box");
 	ConfigBox.AddItem("legit 1");
@@ -850,7 +852,7 @@ void CMiscTab::Setup()
 	FakeYaw.AddItem("Static");
 	FakeYaw.AddItem("Lowerbody");
 	FakeYaw.AddItem("Lowerbody Twitch");
-	FakeYaw.AddItem("Inverse Twitch");
+	FakeYaw.AddItem("Inverse");
 	FakeYaw.AddItem("Random Lowerbody");
 	FakeYaw.AddItem("Half Spin");
 	FakeYaw.AddItem("180 Autist");
@@ -944,9 +946,18 @@ void CMiscTab::Setup()
 
 
 
+	backup_aa.SetFileId("backup_aa_because_making_cfgs_is_SOOOOOOOOO_fucking_hard");
+	backup_aa.AddItem("Off");
+	backup_aa.AddItem("Backwards / Adaptive");
+	backup_aa.AddItem("Manual / Inverse");
+	backup_aa.AddItem("Lowerbody 180 / Lowerbody Random");
+	AntiAimGroup.PlaceLabledControl(3, "Panic Anti Aim", this, &backup_aa);
 
+	backup_key.SetFileId("learn_how_to_cfg_ffs");
+	AntiAimGroup.PlaceLabledControl(3, "Panic AA Enable", this, &backup_key);
 
-
+	default_key.SetFileId("learn_how_to_cfg_ffs2");
+	AntiAimGroup.PlaceLabledControl(3, "Panic AA Disable", this, &default_key);
 
 	manualleft.SetFileId("otr_keybasedleft");
 	AntiAimGroup.PlaceLabledControl(4, "Manual_Right", this, &manualleft);

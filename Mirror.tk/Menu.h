@@ -16,7 +16,7 @@ public:
 
 	CGroupBox AimbotGroup;
 	CCheckBox AimbotEnable;
-	CComboBox lag_pred;
+	CCheckBox lag_pred;
 	CCheckBox AimbotAutoFire;
 	CSlider  AimbotFov;
 	CCheckBox AimbotSilentAim;
@@ -448,10 +448,15 @@ public:
 	CKeyBind manualback;
 	CKeyBind manualfront;
 
+	CKeyBind backup_key;
+	CKeyBind default_key;
+
 	CGroupBox AntiAimGroup;
 	CCheckBox AntiAimEnable;
 	CComboBox AntiAimPitch;
 	CComboBox AntiAimYaw;
+
+	CComboBox backup_aa;
 
 	CSlider staticr;
 	CSlider staticf;

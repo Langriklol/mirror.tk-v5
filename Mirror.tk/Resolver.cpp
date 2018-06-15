@@ -9,6 +9,17 @@
 #else
 #define XorStr( s ) ( s )
 #endif
+
+/*
+A lot of people didn't get why all this is here, so i will explain.
+
+My idea behind this is to allow people, regardless of preference compared to me, be able to build something of their own
+and i want to give them all the tools needed. You got some reversed aw dump stuff here, and a lot of
+other things you can use to essentially build any type of fsn resolver you feel like. What's prebuilt is simply
+down to my personal preference.
+*/
+
+
 float get_average_lby_standing_update_delta(IClientEntity* player) {
 	static float last_update_time[64];
 	static float second_laste_update_time[64];
@@ -86,7 +97,11 @@ void ResolverSetup::preso(IClientEntity * pEntity)
 				last_simtime[i] = sim;
 			}
 
-			player->GetEyeAnglesXY()->x = stored_pitch[i];
+			if (Globals::missedshots < 3)
+				player->GetEyeAnglesXY()->x = stored_pitch[i];
+			else
+				player->GetEyeAnglesXY()->x = 89;
+
 		}
 
 
@@ -716,8 +731,10 @@ void ResolverSetup::Resolve(IClientEntity* pEntity, int CurrentTarget)
 		float last_simtime[64] = { 0.f };
 		float stored_pitch[64] = { 89.f };
 		float last_lby[64] = { 0.f };
+		float last_lby2[64] = { 0.f };
 		float last_lby_delta[64] = { 0.f };
 		float large_lby_delta[64] = { 0.f };
+		float large_lby_delta2[64] = { 0.f };
 		float moving_lby[64] = { 0.f };
 		bool  was_moving[64] = { false };
 
@@ -729,17 +746,18 @@ void ResolverSetup::Resolve(IClientEntity* pEntity, int CurrentTarget)
 
 		if (!local) return;
 
-		for (auto i = 0; i < Interfaces::Engine->GetMaxClients(); ++i) {
+		for (auto i = 0; i < Interfaces::Engine->GetMaxClients(); ++i) 
+		{
 			const auto player = const_cast <IClientEntity*>(Interfaces::EntList->GetClientEntity(i));
-
-
 
 			if (!player || local == player || player->GetTeamNum() == local->GetTeamNum() || player->IsImmune() || player->IsDormant()) {
 				last_simtime[i] = 0.f;
 				stored_pitch[i] = 89.f;
 				last_lby[i] = 0.f;
+				last_lby2[i] = 0.f;
 				last_lby_delta[i] = 0.f;
 				large_lby_delta[i] = 0.f;
+				large_lby_delta2[i] = 0.f;
 				was_moving[i] = false;
 				continue;
 			}
@@ -753,8 +771,6 @@ void ResolverSetup::Resolve(IClientEntity* pEntity, int CurrentTarget)
 			while (missed > 8) missed -= 8;
 			while (missed < 0) missed += 8;
 
-			auto angle = 0.f;
-			auto angle2 = 0.f;
 
 			if (lby != last_lby[i]) {
 				update = true;
@@ -766,19 +782,56 @@ void ResolverSetup::Resolve(IClientEntity* pEntity, int CurrentTarget)
 				}
 				last_lby[i] = lby;
 			}
-
-
-			if (pEntity->GetVelocity().Length2D() > 1)
+			auto angle = 0.f;
+			if (update)
 			{
-				if (pEntity->GetFlags() & FL_ONGROUND)
+				if (GetAsyncKeyState(Options::Menu.RageBotTab.OverrideKey.GetKey()) && vel < 145)
 				{
-					if (pEntity->GetVelocity().Length2D() > 35)
-					{
+					angle = override_yaw(player, local);
+				}
+				else
+					angle = lby;
+			}
+			if (lby != last_lby2[i]) {
+				update = true;
+				auto delta = fabsf(lby - last_lby2[i]);
+				last_lby_delta[i] = delta;
+				if (delta > 80)
+				{
+					large_lby_delta2[i] = delta;
+				}
+				last_lby2[i] = lby;
+			}
+
+			if (sim - last_simtime[i] >= 1) 
+			{
+				if (sim - last_simtime[i] == 1)
+				{
+
+					legit = true;
+				}
+
+
+				last_simtime[i] = sim;
+			}
+
+
+		
+
+
+			if (vel > 12)
+			{
+				
+
+				
 						moving_lby[pEntity->GetIndex()] = pEntity->GetLowerBodyYaw();
 						last_moving_lby[pEntity->GetIndex()] = moving_lby[pEntity->GetIndex()];
+
 						was_moving[i] = true;
 
-						if (GetAsyncKeyState(Options::Menu.RageBotTab.OverrideKey.GetKey()) && vel < 100)
+						moving_lby[i] = lby;
+
+						if (GetAsyncKeyState(Options::Menu.RageBotTab.OverrideKey.GetKey()) && vel < 150)
 						{
 							angle = override_yaw(player, local);
 						}
@@ -786,78 +839,39 @@ void ResolverSetup::Resolve(IClientEntity* pEntity, int CurrentTarget)
 						{
 							switch (Globals::missedshots % 5)
 							{
-							case 0: angle = pEntity->GetLowerBodyYaw() - 10; break;
-							case 1: angle = moving_lby[pEntity->GetIndex()]; break;
+							case 0: angle = moving_lby[pEntity->GetIndex()]; break;
+							case 1: angle = pEntity->GetLowerBodyYaw() - 20; break;
 							case 2: angle = moving_lby[pEntity->GetIndex()] + 25; break;
 							case 3: angle = last_moving_lby[pEntity->GetIndex()]; break;
 							case 4: angle = moving_lby[pEntity->GetIndex()]; break;
 							}
 						}
-					}
-					else
-					{
-						if (GetAsyncKeyState(Options::Menu.RageBotTab.OverrideKey.GetKey()) && vel < 60)
-						{
-							angle = override_yaw(player, local);
-						}
-						else
-						{
-							if (pEntity->GetMoveType() & FL_DUCKING)
-							{
-								switch (Globals::missedshots % 5)
-								{
-								case 0: angle = lby - 25; break;
-								case 1: angle = lby; break;
-								case 2: angle = lby + 25; break;
-								case 3: angle = last_moving_lby[pEntity->GetIndex()] + 30; break;
-								case 4: angle = last_moving_lby[pEntity->GetIndex()] - 30; break;
-								}
-							}
-							else
-							{
-								switch (Globals::missedshots % 5)
-								{
-								case 0: angle = last_moving_lby[pEntity->GetIndex()] + 15; break;
-								case 1: angle = lby - 15; break;
-								case 2: angle = lby + 15; break;
-								case 3: angle = lby + 45; break;
-								case 4: angle = last_moving_lby[pEntity->GetIndex()] - 40; break;
-								}
-							}
-						}
-					}
-				}
-				else
-				{
-					switch (missed)
-					{
-					case 0: angle = lby + 25; break;
-					case 1: angle = lby - 45; break;
-					case 2: angle = lby - 180; break;
-					case 3: angle = last_moving_lby[pEntity->GetIndex()] - 45; break;
-					case 4: angle = last_moving_lby[pEntity->GetIndex()] + 45; break;
-					}
-				}
+				
+				
 			}
 			else
 			{
-				if (GetAsyncKeyState(Options::Menu.RageBotTab.OverrideKey.GetKey()) && vel < 60)
+				
+				if (legit)
 				{
-					angle = override_yaw(player, local);
-				}
-				if (sim - last_simtime[i] >= 1)
-				{
-					if (sim - last_simtime[i] == 1)
+					if (GetAsyncKeyState(Options::Menu.RageBotTab.OverrideKey.GetKey()) && vel < 145)
 					{
-						legit = true;
-						switch (missed)
+						angle = override_yaw(player, local);
+					}
+					else
+					{
+						switch (Globals::missedshots % 6)
 						{
-						case 0: angle = last_moving_lby[pEntity->GetIndex()] - 20; break;
-						case 1: angle = last_moving_lby[pEntity->GetIndex()] + 20; break;
-						case 2: angle = pEntity->GetLowerBodyYaw(); break;
-						case 3: angle = pEntity->GetLowerBodyYaw() ; break;
+						case 0: angle = pEntity->GetLowerBodyYaw(); break;
+						case 1: angle = last_moving_lby[pEntity->GetIndex()]; break;
+						case 2: angle = pEntity->GetLowerBodyYaw() + 35; break;
+						case 3: angle = pEntity->GetLowerBodyYaw() - 35; break;
+						case 4: angle = pEntity->GetLowerBodyYaw() - 90; break;
+						case 5: angle = pEntity->GetLowerBodyYaw() + 35; break;
 						}
 					}
+					
+					
 				}
 				else
 				{
@@ -865,30 +879,47 @@ void ResolverSetup::Resolve(IClientEntity* pEntity, int CurrentTarget)
 
 					if (was_moving[i])
 					{
-						switch (Globals::missedshots % 5) {
-						case 0: angle = moving_lby[i]; break;
-						case 1: angle = lby + large_lby_delta[i]; break;
-						case 2: angle = lby + last_lby_delta[i]; break;
-						case 3: angle = moving_lby[i]; break;
-						case 4: angle = moving_lby[i] + 180; break;
-						default: angle = last_moving_lby[pEntity->GetIndex()];
+						if (GetAsyncKeyState(Options::Menu.RageBotTab.OverrideKey.GetKey()) && vel < 145)
+						{
+							
+							angle = override_yaw(player, local);
+						}
+						else
+						{
+							switch (Globals::missedshots % 8)
+							{
+							case 0: angle = moving_lby[i] - 35; break;
+							case 1: angle = lby + large_lby_delta[i]; break;
+							case 2: angle = lby + last_lby_delta[i]; break;
+							case 3: angle = moving_lby[i]; break;
+							case 4: angle = lby; break;
+							case 5: angle = moving_lby[i] - 90; break;
+							case 6: angle = moving_lby[i] + 90; break;
+							case 7: angle = last_lby_delta[i]; break;
+							}
 						}
 
 					}
 					else
 					{
-
-						switch (Globals::missedshots % 9)
+						if (GetAsyncKeyState(Options::Menu.RageBotTab.OverrideKey.GetKey()) && vel < 145)
 						{
-						case 0: angle = last_moving_lby[pEntity->GetIndex()] - 25; break;
-						case 1: angle = last_moving_lby[pEntity->GetIndex()] + 45; break;
-						case 2: angle = lby + last_lby_delta[i]; break;
-						case 3: angle = lby + large_lby_delta[i]; break;
-						case 4: angle = last_moving_lby[pEntity->GetIndex()]; break;
-						case 5: angle = angle - 120; break;
-						case 6: angle = angle + 120; break;
-						case 7: angle = angle - last_lby_delta[i]; break;
-						case 8: angle = angle - 180; break;
+							angle = override_yaw(player, local);
+						}
+						else
+						{
+							switch (Globals::missedshots % 9)
+							{
+							case 0: angle = lby + last_lby2[i]; break;
+							case 1: angle = large_lby_delta2[i]; break;
+							case 2: angle = lby + last_lby_delta[i]; break;
+							case 3: angle = lby + large_lby_delta[i]; break;
+							case 4: angle = last_moving_lby[pEntity->GetIndex()]; break;
+							case 5: angle = angle - 120; break;
+							case 6: angle = angle + 120; break;
+							case 7: angle = angle - last_lby_delta[i]; break;
+							case 8: angle = angle - 180; break;
+							}
 						}
 
 					}
@@ -952,7 +983,8 @@ void ResolverSetup::Resolve(IClientEntity* pEntity, int CurrentTarget)
 			}
 
 
-			if (lby != last_lby[i]) {
+			if (lby != last_lby[i]) 
+			{
 				update = true;
 				auto delta = fabsf(lby - last_lby[i]);
 				last_lby_delta[i] = delta;
@@ -979,11 +1011,16 @@ void ResolverSetup::Resolve(IClientEntity* pEntity, int CurrentTarget)
 			}
 			else if (update)
 			{
-
+				if (GetAsyncKeyState(Options::Menu.RageBotTab.OverrideKey.GetKey()) && vel < 145)
+				{
+					angle = override_yaw(player, local);
+				}
+				else
 				angle = lby;
 			}
 
-			else if (vel > 35) {
+			else if (vel > 35) 
+			{
 				angle = lby;
 				moving_lby[i] = lby;
 				was_moving[i] = true;
@@ -1045,31 +1082,28 @@ void ResolverSetup::Resolve(IClientEntity* pEntity, int CurrentTarget)
 			{
 				if (pEntity->GetFlags() & FL_ONGROUND)
 				{
-					if (pEntity->GetVelocity().Length2D() > 45)
-					{
-						moving_lby[pEntity->GetIndex()] = pEntity->GetLowerBodyYaw();
-						last_moving_lby[pEntity->GetIndex()] = moving_lby[pEntity->GetIndex()];
-
-						was_moving[i] = true;
-
-						angle = moving_lby[pEntity->GetIndex()];
-					}
-					else
-					{
-						switch (Globals::missedshots % 4)
+					
+						if (GetAsyncKeyState(Options::Menu.RageBotTab.OverrideKey.GetKey()))
 						{
-						case 0: angle = pEntity->GetLowerBodyYaw(); break;
-						case 1: angle = last_moving_lby[pEntity->GetIndex()]; break;
-						case 2: angle = pEntity->GetLowerBodyYaw() - 25; break;
-						case 3: angle = moving_lby[pEntity->GetIndex()] + 25; break;
+							angle = override_yaw(pEntity, pLocal);
 						}
-					}
+						else
+						{
+							switch (Globals::missedshots % 4)
+							{
+							case 0: angle = pEntity->GetLowerBodyYaw(); break;
+							case 1: angle = last_moving_lby[pEntity->GetIndex()] - 20; break;
+							case 2: angle = pEntity->GetLowerBodyYaw() + 15; break;
+							case 3: angle = moving_lby[pEntity->GetIndex()] + 25; break;
+							}
+						}
+					
 				}
 				else
 				{
 					switch (Globals::missedshots % 4)
 					{
-					case 0: angle = last_moving_lby[pEntity->GetIndex()]; break;
+					case 0: angle = pEntity->GetLowerBodyYaw(); break;
 					case 1: angle = pEntity->GetLowerBodyYaw() - 45; break;
 					case 2: angle = pEntity->GetLowerBodyYaw() - 180; break;
 					case 3: angle = pEntity->GetLowerBodyYaw() + 135; break;
@@ -1092,9 +1126,9 @@ void ResolverSetup::Resolve(IClientEntity* pEntity, int CurrentTarget)
 						{
 							switch (Globals::missedshots % 7)
 							{
-							case 0: angle = last_moving_lby[pEntity->GetIndex()] + 15; break;
+							case 0: angle = last_moving_lby[pEntity->GetIndex()] + 20; break;
 							case 1: angle = last_moving_lby[pEntity->GetIndex()] - 45; break;
-							case 2: angle = last_moving_lby[pEntity->GetIndex()] + 65; break;
+							case 2: angle = pEntity->GetLowerBodyYaw();  break;
 							case 3: angle = angle - pEntity->GetLowerBodyYaw(); break;
 							case 4: angle = (angle + pEntity->GetLowerBodyYaw()) - 120; break;
 							case 5: angle = (angle + pEntity->GetLowerBodyYaw()) + 120; break;
@@ -1112,8 +1146,8 @@ void ResolverSetup::Resolve(IClientEntity* pEntity, int CurrentTarget)
 						{
 							switch (Globals::missedshots % 7)
 							{
-							case 0: angle = last_moving_lby[pEntity->GetIndex()] - 15; break;
-							case 1: angle = last_moving_lby[pEntity->GetIndex()] + 15; break;
+							case 0: angle = last_moving_lby[pEntity->GetIndex()] - 25; break;
+							case 1: angle = last_moving_lby[pEntity->GetIndex()] + 25; break;
 							case 2: angle = pEntity->GetLowerBodyYaw() - 119; break;
 							case 3: angle = angle - 90; break;
 							case 4: angle = angle - 60; break;
@@ -1126,40 +1160,49 @@ void ResolverSetup::Resolve(IClientEntity* pEntity, int CurrentTarget)
 				}
 				else
 				{
-					if (GetAsyncKeyState(Options::Menu.RageBotTab.OverrideKey.GetKey()))
-					{
-						angle = override_yaw(pEntity, pLocal);
-					}
-					else
-					{
+					
 						if (was_moving[i])
 						{
-							switch (Globals::missedshots % 7)
+							if (GetAsyncKeyState(Options::Menu.RageBotTab.OverrideKey.GetKey()))
 							{
-							case 0: angle = last_moving_lby[pEntity->GetIndex()] - 10; break;
-							case 1: angle = last_moving_lby[pEntity->GetIndex()] + 35; break;
-							case 2: angle = last_moving_lby[pEntity->GetIndex()] + 90; break;
-							case 3: angle = last_moving_lby[pEntity->GetIndex()] - 90; break;
-							case 4: angle = last_moving_lby[pEntity->GetIndex()]; break;
-							case 5: angle = last_moving_lby[pEntity->GetIndex()] - 180; break;
-							case 6: angle = angle - last_moving_lby[pEntity->GetIndex()]; break;
+								angle = override_yaw(pEntity, pLocal);
+							}
+							else
+							{
+								switch (Globals::missedshots % 7)
+								{
+								case 0: angle = last_moving_lby[pEntity->GetIndex()] - 15; break;
+								case 1: angle = last_moving_lby[pEntity->GetIndex()] + 40; break;
+								case 2: angle = pEntity->GetLowerBodyYaw(); break;
+								case 3: angle = pEntity->GetLowerBodyYaw() - 119; break;
+								case 4: angle = pEntity->GetLowerBodyYaw() + 119; break;
+								case 5: angle = angle - pEntity->GetLowerBodyYaw(); break;
+								case 6: angle = angle - last_moving_lby[pEntity->GetIndex()]; break;
+								}
 							}
 						}
 						else
 						{
-							switch (Globals::missedshots % 7)
+							if (GetAsyncKeyState(Options::Menu.RageBotTab.OverrideKey.GetKey()))
 							{
-							case 0: angle = angle - pEntity->GetLowerBodyYaw(); break;
-							case 1: angle = angle - 90; break;
-							case 2: angle = angle + 90; break;
-							case 3: angle = pEntity->GetLowerBodyYaw(); break;
-							case 4: angle = angle - pEntity->GetLowerBodyYaw(); break;
-							case 5: angle = angle - 90; break;
-							case 6: angle = angle + 180; break;
+								angle = override_yaw(pEntity, pLocal);
+							}
+							else
+							{
+								switch (Globals::missedshots % 7)
+								{
+								case 0: angle = pEntity->GetLowerBodyYaw() - 60; break;
+								case 1: angle = angle - 90; break;
+								case 2: angle = angle + 50; break;
+								case 3: angle = pEntity->GetLowerBodyYaw() + 10; break;
+								case 4: angle = angle - pEntity->GetLowerBodyYaw(); break;
+								case 5: angle = angle - 90; break;
+								case 6: angle = angle + 180; break;
+								}
 							}
 
 						}
-					}
+					
 				}
 
 			}
@@ -1224,8 +1267,13 @@ void ResolverSetup::Resolve(IClientEntity* pEntity, int CurrentTarget)
 	}
 	else if (Options::Menu.VisualsTab.fakemedia.GetState())
 	{
-		pEntity->GetEyeAnglesXY()->x = 88;
-		pEntity->GetEyeAnglesXY()->y = pEntity->GetLowerBodyYaw() - 180;
+		switch (Globals::missedshots % 4)
+		{
+		case 0: pEntity->GetEyeAnglesXY()->x = 88; pEntity->GetEyeAnglesXY()->y = pEntity->GetLowerBodyYaw();
+		case 1: pEntity->GetEyeAnglesXY()->x = 89; pEntity->GetEyeAnglesXY()->y = pEntity->GetLowerBodyYaw() + rand() % 45;
+		case 2: pEntity->GetEyeAnglesXY()->x = 89; pEntity->GetEyeAnglesXY()->y = pEntity->GetLowerBodyYaw() - 30;
+		case 3: pEntity->GetEyeAnglesXY()->x = 88; pEntity->GetEyeAnglesXY()->y;
+		}
 
 	}
 

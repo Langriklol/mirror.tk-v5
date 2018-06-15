@@ -768,6 +768,10 @@ struct mstudiobbox_t
 
 		return ((char*)this) + szhitboxnameindex;
 	}
+	inline mstudiobbox_t* pHitbox(int i) const
+	{
+		return (mstudiobbox_t*)(((BYTE*)this) + szhitboxnameindex) + i;
+	};
 };
 struct mstudiohitboxset_t
 {
@@ -776,7 +780,10 @@ struct mstudiohitboxset_t
 	int                                             numhitboxes;
 	int                                             hitboxindex;
 	inline mstudiobbox_t*   GetHitbox(int i) const { return (mstudiobbox_t*)(((byte*)this) + hitboxindex) + i; };
-
+	inline mstudiobbox_t* pHitbox(int i) const
+	{
+		return (mstudiobbox_t*)(((BYTE*)this) + hitboxindex) + i;
+	};
 
 };
 struct mstudiobone_t

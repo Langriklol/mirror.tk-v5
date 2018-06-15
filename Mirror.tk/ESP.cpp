@@ -154,10 +154,10 @@ void CEsp::DrawPlayer(IClientEntity* pEntity, player_info_t pinfo)
 			DrawHealth(pEntity, box);
 		if (Options::Menu.VisualsTab.OptionsHealth.GetIndex() == 3)
 			DrawInfo22(pEntity, box);
-		if (Options::Menu.VisualsTab.OptionsHealth.GetIndex() == 4)
-			DrawInfo21(pEntity, box);
-		if (Options::Menu.VisualsTab.OptionsHealth.GetIndex() == 5)
-			DrawInfo23(pEntity, box);
+	//	if (Options::Menu.VisualsTab.OptionsHealth.GetIndex() == 4)
+	//		DrawInfo21(pEntity, box);
+	//	if (Options::Menu.VisualsTab.OptionsHealth.GetIndex() == 5)
+	//		DrawInfo23(pEntity, box);
 
 		if (Options::Menu.VisualsTab.OptionsInfo.GetState() || Options::Menu.VisualsTab.OptionsWeapone.GetState())
 			DrawInfo(pEntity, box);
@@ -191,7 +191,7 @@ void CEsp::DrawInfo22(IClientEntity* pEntity, Box size)
 	{
 		RECT nameSize = Render::GetTextSize(Render::Fonts::ESP, hp);
 		sprintf_s(hp, sizeof(hp), "HP: %i", pEntity->GetHealth());
-		Render::Text(size.x +  (size.w / 2) - (nameSize.right / 2), size.y + size.h + 5.1, Color(0, 255, 120, 255), Render::Fonts::ESP, hp);
+		Render::Text(size.x +  (size.w / 2) - (nameSize.right / 2), size.y + size.h + 16, Color(0, 255, 120, 255), Render::Fonts::ESP, hp);
 
 
 	}
@@ -812,33 +812,30 @@ void CEsp::DrawInfo(IClientEntity* pEntity, Box size)
 	// Player Weapon ESP
 	IClientEntity* pWeapon = Interfaces::EntList->GetClientEntityFromHandle((HANDLE)pEntity->GetActiveWeaponHandle());
 	static RECT Size = Render::GetTextSize(Render::Fonts::Default, "Hi");
+	RECT named = Render::GetTextSize(Render::Fonts::ESP, "IsScoped");
 
 	if (Options::Menu.VisualsTab.OptionsInfo.GetState())
 	{
-
+		char hp[50];
+		sprintf_s(hp, sizeof(hp), "%i", pEntity->ArmorValue());
+		RECT nameSize = Render::GetTextSize(Render::Fonts::ESP, hp);
 		if (pEntity->ArmorValue() > 0)
 		{
-			char hp[50];
-			sprintf_s(hp, sizeof(hp), "%i", pEntity->ArmorValue());
-
-
-			Render::Text(size.x + size.w + 1, size.y + 10, Color(255, 255, 255, 255), Render::Fonts::ESP, hp);
 
 			if (pEntity->HasHelmet())
-				Render::Text(size.x + size.w + 1, size.y + 0, Color(255, 255, 255, 255), Render::Fonts::ESP, "HK");
+				Render::Text(size.x + (size.w / 2) - (nameSize.right / 2), size.y + size.h + 5.1, Color(255, 255, 255, 255), Render::Fonts::ESP, "HK");
 			else
-				Render::Text(size.x + size.w + 1, size.y + 0, Color(210, 210, 210, 255), Render::Fonts::ESP, "Kevlar");
+				Render::Text(size.x + (size.w / 2) - (nameSize.right / 2), size.y + size.h + 5.1, Color(210, 210, 210, 255), Render::Fonts::ESP, "Kevlar");
 		}
 		else
-			Render::Text(size.x + size.w + 1, size.y + 0, Color(0, 210, 255, 255), Render::Fonts::ESP, "No Armor");
+			Render::Text(size.x + (size.w / 2) - (nameSize.right / 2), size.y + size.h + 5.1, Color(0, 210, 255, 255), Render::Fonts::ESP, "No Armor");
 
 	}
 	if (Options::Menu.VisualsTab.OptionsInfo.GetState())
 	{
 		if (pEntity->IsScoped())
 		{
-
-			Render::Text(size.x + size.w + 1, size.y + 20, Color(0, 200, 255, 255), Render::Fonts::ESP, "IsScoped");
+			Render::Text(size.x + (size.w / 2) - (named.right / 2), size.y + size.h + 10.5, Color(0, 200, 255, 255), Render::Fonts::ESP, "IsScoped");
 		}
 
 

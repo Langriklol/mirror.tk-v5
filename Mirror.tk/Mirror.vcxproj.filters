@@ -37,7 +37,6 @@
     <ClCompile Include="Utilities.cpp" />
     <ClCompile Include="Visual.cpp" />
     <ClCompile Include="Window.cpp" />
-    <ClCompile Include="lin_extp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AntiAntiAim.h" />

@@ -175,22 +175,21 @@ bool GameUtils::IsBallisticWeapon(void* weapon)
 	return !(id >= WEAPON_KNIFE_CT && id <= WEAPON_KNIFE_T || id == 0 || id >= WEAPON_KNIFE_BAYONET);
 }
 
-bool GameUtils::IsNotPistol(void * weapon)
+
+bool GameUtils::IsKnife(void* weapon)
 {
-	C_BaseCombatWeapon* pWeapon = reinterpret_cast<C_BaseCombatWeapon*>(weapon);
+	if (weapon == nullptr) return false;
+	C_BaseCombatWeapon *pWeapon = (C_BaseCombatWeapon*)weapon;
+	int id = *pWeapon->m_AttributeManager()->m_Item()->ItemDefinitionIndex();
 
-	if (!weapon || !pWeapon)
-		return false;
-
-	int WeaponID = pWeapon->GetWeaponID2();
-	if (WeaponID == WEAPON_ELITE || WeaponID == WEAPON_DEAGLE || WeaponID == WEAPON_CZ75A || WeaponID == WEAPON_FIVESEVEN || WeaponID == WEAPON_GLOCK || WeaponID == WEAPON_HKP2000 || WeaponID == WEAPON_P250 || WeaponID == WEAPON_TEC9 || WeaponID == WEAPON_USP_SILENCER)
+	if (id == WEAPON_KNIFE_CT || id == WEAPON_KNIFE_T || id == 0 || id == WEAPON_KNIFE_BAYONET);
 	{
 		return true;
 	}
-
-	return false;
+	
 
 }
+
 
 bool GameUtils::IsBomb(void* weapon)
 {
@@ -357,7 +356,7 @@ Vector GetHitboxPosition(IClientEntity* pEntity, int Hitbox)
 {
 	matrix3x4 matrix[128];
 
-	if (pEntity->SetupBones(matrix, 128, 0x100, 0.f))
+	if (pEntity->SetupBones(matrix, 128, 0x00000100 /*0x100*/, 0.f))
 	{
 		studiohdr_t* hdr = Interfaces::ModelInfo->GetStudiomodel(pEntity->GetModel());
 		mstudiohitboxset_t* set = hdr->GetHitboxSet(0);
@@ -378,6 +377,31 @@ Vector GetHitboxPosition(IClientEntity* pEntity, int Hitbox)
 
 	return Vector(0, 0, 0);
 }
+
+
+Vector hitbox_location(IClientEntity* obj, int hitbox_id)
+{
+	matrix3x4 bone_matrix[128];
+
+	if (obj->SetupBones(bone_matrix, 128, 0x00000100, 0.0f)) {
+		if (obj->GetModel()) {
+			auto studio_model = Interfaces::ModelInfo->GetStudiomodel(obj->GetModel());
+			if (studio_model) {
+				auto hitbox = studio_model->GetHitboxSet(0)->GetHitbox(hitbox_id);
+				if (hitbox) {
+					auto min = Vector{}, max = Vector{};
+
+					VectorTransform(hitbox->bbmin, bone_matrix[hitbox->bone], min);
+					VectorTransform(hitbox->bbmax, bone_matrix[hitbox->bone], max);
+
+					return (min + max) / 2.0f;
+				}
+			}
+		}
+	}
+	return Vector{};
+}
+
 
 Vector GetEyePosition(IClientEntity* pEntity)
 {

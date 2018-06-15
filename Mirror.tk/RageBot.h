@@ -24,11 +24,11 @@ class CRageBot : public CHack
 public:
 	void Init();
 	void Draw();
-
 	void Fakelag(CUserCmd * pCmd, bool & bSendPacket);
 
-	void linear_extp();
 
+	void DoAimbot(CUserCmd *pCmd, bool &bSendPacket);
+	void DoNoRecoil(CUserCmd *pCmd);
 	void Move(CUserCmd *pCmd, bool &bSendPacket);
 
 private:
@@ -42,7 +42,7 @@ private:
 	void aimAtPlayer(CUserCmd * pCmd);
 	bool AimAtPoint(IClientEntity * pLocal, Vector point, CUserCmd * pCmd, bool & bSendPacket);
 
-	void Freestanding(CUserCmd * cmd);
+
 
 	
 	float FovToPlayer(Vector ViewOffSet, Vector View, IClientEntity* pEntity, int HitBox);
@@ -51,8 +51,6 @@ private:
 
 
 
-	void DoAimbot(CUserCmd *pCmd, bool &bSendPacket);
-	void DoNoRecoil(CUserCmd *pCmd);
 
 	void DoPitch(CUserCmd * pCmd);
 
